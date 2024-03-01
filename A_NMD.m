@@ -37,7 +37,13 @@ defaults = struct('Theta0', randn(m, n), 'maxit', 1000, 'tol', 1e-4, 'tolerr', 1
 if nargin < 3
     param = defaults;
 else
-    param = setfield(defaults, param);
+    fields = fieldnames(param);
+    for i = 1:numel(fields)
+        if isfield(defaults, fields{i})
+            defaults.(fields{i}) = param.(fields{i});
+        end
+    end
+    param = defaults;
 end
 
 
