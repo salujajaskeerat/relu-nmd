@@ -74,8 +74,8 @@ Z0(idxp) = nonzeros(X);
 %Create istances for the variables
 Z=Z0; W=param.W0; H=param.H0; Theta=W*H; Z_old=Z;  Theta_old=Theta;
 
-time=zeros(1,param.maxit);
-err=zeros(1,param.maxit);
+time(1)=0;
+
 
 %Initialize error and time counter
 err(1)=norm(max(0,Theta)-X,'fro')/normX;
