@@ -31,34 +31,15 @@ function [Theta,err,i,time]=A_NMD(X,r,param)
 % with the ReLU function'', Giovanni Seraghiti, Atharva Awari, Arnaud 
 % Vandaele, Margherita Porcelli, and Nicolas Gillis, 2023. 
 
-[m,n]=size(X);
+
+[m, n] = size(X);
+defaults = struct('Theta0', randn(m, n), 'maxit', 1000, 'tol', 1e-4, 'tolerr', 1e-5, 'time', 20, 'beta', 0.9, 'eta', 0.4, 'gamma', 1.1, 'gamma_bar', 1.05, 'display', 1);
 if nargin < 3
-    param = [];
+    param = defaults;
+else
+    param = setfield(defaults, param);
 end
-if ~isfield(param,'Theta0')
-    param.Theta0=randn(m,n);
-end
-if ~isfield(param,'maxit')
-    param.maxit = 1000;
-end
-if ~isfield(param,'tol')
-    param.tol = 1e-4;
-end
-if ~isfield(param,'tolerr')
-    param.tolerr = 1e-5;
-end
-if ~isfield(param,'time')
-    param.time = 20;
-end
-if ~isfield(param,'beta') || isfield(param,'eta') || isfield(param,'gamma') || isfield(param,'gamma_bar')
-    param.beta=0.9;
-    param.eta=0.4;
-    param.gamma=1.1;
-    param.gamma_bar=1.05;
-end
-if ~isfield(param,'display')
-    param.display = 1;
-end
+
 
 %Inizialization of parameters of the model
 beta_bar=1;
@@ -104,13 +85,13 @@ for i=1:param.maxit
     
     %Update of T
     [W,D,V] = tsvd(Z,r);  %function computing TSVD
-    H = D*V';
+    H = D*V'; % H=DV matrix multiplication
     Theta = W*H;
     Theta_return=Theta;
     
     %Error computation
     Ap=max(0,Theta);
-    err(i+1)=norm(Ap-X,'fro')/normX;
+    err(i+1)=norm(Ap-X,'fro')/normX; 
     %Standard stopping condition on the relative error
     if err(i+1)<param.tol
         time(i+1)=time(i)+toc; %needed to have same time components as iterations
