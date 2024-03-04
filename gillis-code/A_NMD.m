@@ -1,4 +1,4 @@
-function [Theta,err,i,time]=A_NMD(X,r,param)
+function [Theta,err,i,time,Z]=A_NMD(X,r,param)
 
 % Computes an approximate solution of the following non linear matrix
 % decomposition problem (NMD)
