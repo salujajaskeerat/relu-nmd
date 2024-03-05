@@ -11,9 +11,9 @@ clc
 rng(2023)
 
 
-m=1000;
-n=1000;
-X=randi([-1000,1000],m,n);
+m=2000;
+n=2000;
+X=randn(m,n);
 
 fprintf('rank of x = %d\n',[rank(X)]);
 
@@ -23,7 +23,7 @@ fprintf('rank of x = %d\n',[rank(X)]);
 
 param=struct();
 %Parameters setting
-param.maxit=1000; param.tol=1.e-4; param.tolerr = 0; param.time=20;
+param.maxit=1000; param.tol=1.e-10; param.tolerr = 0; param.time=20;
 %A-NMD parameters
 param.beta=0.7; param.eta=0.4; param.gamma=1.1; param.gamma_bar=1.05;
 %3 Blocks momentum parameters
@@ -54,7 +54,7 @@ normX=norm(X,'fro');
 
 
 log_rank=  int64(floor(log2(rank(X))));
-for i=log_rank-2:log_rank
+for i=log_rank:log_rank
     r=2^i;
     fprintf('r set to %d\n',[r]);
     rep=1;

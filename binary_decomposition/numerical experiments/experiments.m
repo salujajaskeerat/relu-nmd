@@ -1,4 +1,4 @@
-%% Define the size of the matrix
+%% Generating the matrix
 rows = 1000;
 cols = 1000;
 
@@ -7,6 +7,10 @@ X = randi([0, 1], rows, cols);
 
 fprintf("rank X= %d\n",[rank(X)]);
 
+
+
+%% Run the algorithms 
+% set the params
 param=struct();
 param.maxit=1000;
 param.display=1;
@@ -19,7 +23,8 @@ r=256+64;
 
 
 
-%% Visualize the error
+
+%% Plots for comparison
 
 figure;
 
