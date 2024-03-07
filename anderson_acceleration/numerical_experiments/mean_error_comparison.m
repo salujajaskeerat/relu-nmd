@@ -14,7 +14,7 @@ close all
 clc
 
 % Add paths
-cd('../'); 
+cd('../../'); 
 Install; 
 
 %% Load Dataset and define rank
@@ -26,7 +26,7 @@ r=32;
 number=1;
 switch number
     case 1 %noiseless synthetic data
-        m=1000; n=1000; %dimension of the problem
+        m=200; n=200; %dimension of the problem
         W1=randn(m,r); H1=randn(r,n);  X=max(0,W1*H1); 
     case 2 %MNIST dataset
         Y=load('mnist_all.mat');
@@ -45,7 +45,7 @@ param_nesterov = struct('maxit', 300000, 'tol', 1e-4, 'tolerr', 0, 'time', 10, .
     'beta', 0.7, 'eta', 0.4, 'gamma', 1.1, 'gamma_bar', 1.05, ...
     'beta1', 0.7, 'alpha', 0.6);
 
-param_anderson=struct('depth',2,'freeze',10,'maxit',1000,'time',20,'tol',1e-4,'tolerr',1e-6);
+param_anderson=struct('depth',3,'freeze',6,'maxit',1000,'time',20,'tol',1e-4,'tolerr',1e-6,'C',10);
 
 
 
@@ -72,7 +72,7 @@ for k=1:rep
 %     param_nesterov.H0 = sa*va';
 %     param_nesterov.Theta0=param_nesterov.W0*param_nesterov.H0;
 %     
-%     %Naive with Andersens' acceleration
+    %Naive with Andersens' acceleration
     [T_ANMD,err_ANMD,it_ANMD,t_ANMD]=A_NMD(X,r,param_nesterov);
     err_ANMD_k(k)=err_ANMD(end);                     %save final error
     p_ANMD(:,k) = spline(t_ANMD,err_ANMD,time); %interpolate in the desired points (needed to compute the average)
@@ -95,27 +95,50 @@ end
 
 
 
-%% Analyse the results
-%Find best solution
-opt=min([err_ANMD_k,err_3B_k,err_AEM_k]);
+%% Varying depth 
+depth_results = struct();
+[T_ANMD,err_ANMD,it_ANMD,t_ANMD]=A_NMD(X,r,param_nesterov);
+for d = 2:5
+    param_anderson.depth = d;
+    [T_ANDR, err_ANDR, i_ANDR, t_ANDR,Z,alphas] = anderson(X, r, param_anderson);
+    
+    % Store the results in the depth_results structure
+    depth_results.(['depth_', num2str(d)]) = struct('T_ANDR', T_ANDR, 'err_ANDR', err_ANDR, 'i_ANDR', i_ANDR, 't_ANDR', t_ANDR,'alphas',alphas);
+end
 
-%Compute the average error
-mean_ANMD=sum(p_ANMD')/rep;
-mean_3B=sum(p_3B')/rep;
-mean_AEM=sum(p_AEM')/rep;
+% Display the depth_results structure
+disp(depth_results);
 
-%Subtract best solution
-p_ANMD_mean=mean_ANMD-opt; 
-p_3B_mean=mean_3B-opt; 
-p_AEM_mean=mean_AEM-opt;
+%% Plot depth vs error
 
 
+figure;
+hold on;
 
-%% Plot the results
-figure
-set(gca,'Fontsize',18)
-semilogy(time,p_ANMD_mean,'r--','LineWidth',1.5); hold on
-semilogy(time,p_3B_mean,'b-.','LineWidth',1.9); 
-semilogy(time,p_AEM_mean,'k-','LineWidth',1.9);
-xlabel('Time','FontSize',22,'FontName','times'); ylabel('err(t)','FontSize',22,'FontName','times');
-legend({'A-NMD','3B-NMD', 'A-EM'},'FontSize',22,'FontName','times')
+% Iterate over the fields of depth_results
+fields = fieldnames(depth_results);
+plot( log10(err_ANMD), 'LineWidth', 2);
+for i = 1:numel(fields)
+    % Extract the results for the current depth
+    depth_data = depth_results.(fields{i});
+    
+    % Plot err_ANDR vs. iteration number for the current depth
+    plot( log10(depth_data.err_ANDR), 'LineWidth', 2);
+end
+
+% Add legend with appropriate labels for each depth
+legend_str = ['ANMD'; cellfun(@(x) ['Depth ' num2str(str2double(strrep(x, 'depth_', '')))], fields, 'UniformOutput', false)];
+legend(legend_str, 'Location', 'Best');
+
+% Set labels and title
+xlabel('Iteration Number');
+ylabel('Error');
+title('Error vs. Iteration Number for Different Depths');
+% Set y-axis scale to logarithmic
+% set(gca, 'YScale', 'log');
+grid on;
+grid minor;
+
+hold off;
+
+

@@ -1,10 +1,10 @@
 
 
 
-function [Theta,err,i,time,Z]=anderson(X,rank,param)
+function [Theta,err,i,time,Z,alpha_it]=anderson(X,rank,param)
     
     [m, n] = size(X);
-    defaults = struct('Theta0', randn(m, n), 'maxit', 1000, 'freeze',10,'tol', 1e-4, 'tolerr', 1e-5, 'time', 20,'depth',10, 'display', 1);
+    defaults = struct('Theta0', randn(m, n), 'maxit', 1000, 'freeze',10,'tol', 1e-4, 'tolerr', 1e-5, 'time', 20,'depth',10, 'display', 1,'C',10,'gaurded',false);
     % param descriptions
     % param.freeze : The anderson acceleration is not applies for first freeze iterations
     % Note : param.freeze >=param.depth
@@ -47,6 +47,7 @@ function [Theta,err,i,time,Z]=anderson(X,rank,param)
 
     % f stores the fz^i while R (residual matrix) stores the r^i = f^i - z
     F=[];R=[];
+    alpha_it=[ones(param.depth,1)];
 
     %Display setting parameters along the iterations
     ones_d=ones(param.depth,1);
@@ -61,7 +62,8 @@ function [Theta,err,i,time,Z]=anderson(X,rank,param)
         F=stack_and_truncate(F,fz,param.depth);
         R=stack_and_truncate(R,r,param.depth);
         
-        if(i>param.freeze)
+        acclerated=false;
+        if(i>param.freeze && i>param.depth)
 
             % Minimize |R*alpha| . Find alphs
             alpha= R'*R \ ones_d;
@@ -69,7 +71,9 @@ function [Theta,err,i,time,Z]=anderson(X,rank,param)
 
             % z^(i+1) = F^(i)alpha
             % Z^(i+1) = matrix(z)
+            alpha_it = [alpha_it, alpha(:)];
             z=F*alpha;
+            acclerated=true;
         else
             z=fz;
         end
@@ -82,7 +86,17 @@ function [Theta,err,i,time,Z]=anderson(X,rank,param)
         
         %Error computation
         Ap=max(0,Theta);
+        
         err(i+1)=norm(Ap-X,'fro')/normX; 
+        if(param.gaurded && err(i+1)>err(i) && acclerated)
+            % error did'nt improve
+            z=fz;
+            Z=reshape(z,m,n);
+            [W,D,V] = tsvd(Z,rank);  %function computing TSVD
+            Theta=W*D*V';
+            Ap=max(0,Theta);
+            err(i+1)=norm(Ap-X,'fro')/normX; 
+        end
         %Standard stopping condition on the relative error
         if err(i+1)<param.tol
             time(i+1)=time(i)+toc; %needed to have same time components as iterations
@@ -92,7 +106,7 @@ function [Theta,err,i,time,Z]=anderson(X,rank,param)
             end
             break
         end
-        if i >= 11  &&  abs(err(i+1) - err(i-10)) < param.tolerr
+        if i >= 20  &&  abs(err(i+1) - err(i-19)) < param.tolerr
             time(i+1)=time(i)+toc; %needed to have same time components as iterations
             if param.display == 1
                 if mod(numdis,5) > 0, fprintf('\n'); end
